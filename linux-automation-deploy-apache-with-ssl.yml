@@ -28,6 +28,15 @@
         state: present
         update_cache: yes
 
+    - name: Add ports 80 and 443 to firewalld
+      ansible.builtin.firewalld:
+        service: "{{ item }}"
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+        
     - name: Ensure /etc/pki/tls/private exists (SELinux‑aware)
       ansible.builtin.file:
         path: /etc/pki/tls/private
