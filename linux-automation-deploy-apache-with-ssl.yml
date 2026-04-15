@@ -35,24 +35,9 @@
         owner: root
         group: root
 
-    - name: Create private key for self‑signed cert
-      ansible.builtin.openssl_privatekey:
-        path: "{{ ssl_key_path }}"
-        size: 2048
-        mode: 0400
-
-    - name: Create self‑signed certificate
-      ansible.builtin.openssl_certificate:
-        path: "{{ ssl_cert_path }}"
-        privatekey_path: "{{ ssl_key_path }}"
-        common_name: "{{ ssl_host }}"
-        subject:
-          commonName: "{{ ssl_host }}"
-          organizationName: "ExampleMX"
-          countryName: "MX"
-        provider: selfsigned
-        days: 365
-        mode: 0444
+    - name: Create self-signed cert
+      ansible.builtin.command: openssl req -new -nodes -x509 -subj "/C=FI/ST=Helsinki/L=Helsinki/O=IT/CN=www.example.com" -days 3650 -keyout
+        /etc/ssl/private/apache-key.pem -out /etc/ssl/certs/apache-cert.pem -extensions v3_ca creates=/etc/ssl/certs/apache-cert.pem
 
     - name: Create Apache SSL configuration from template
       ansible.builtin.template:
