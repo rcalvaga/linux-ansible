@@ -32,6 +32,8 @@
       ansible.builtin.firewalld:
         service: "{{ item }}"
         permanent: true
+        inmediate: true
+        zone: public
         state: enabled
       loop:
         - http
