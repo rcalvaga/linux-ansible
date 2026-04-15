@@ -1,0 +1,33 @@
+---
+- name: Deploy Apache server with SSL
+  hosts: all
+  become: true
+  vars:
+    apache_port: 443
+    apache_cert_file: /etc/ssl/certs/apache-cert.pem
+    apache_key_file: /etc/ssl/private/apache-key.pem
+  tasks:
+    - name: Install apache
+      ansible.builtin.package:
+        name: apache2
+        state: latest
+    - name: Install SSL
+      ansible.builtin.package:
+        name:
+          - openssl
+          - ssl-cert
+        state: latest
+    - name: Create self-signed cert
+      ansible.builtin.command: openssl req -new -nodes -x509 -subj "/C=FI/ST=Helsinki/L=Helsinki/O=IT/CN=www.example.com" -days 3650 -keyout
+        /etc/ssl/private/apache-key.pem -out /etc/ssl/certs/apache-cert.pem -extensions v3_ca creates=/etc/ssl/certs/apache-cert.pem
+    - name: Configure apache
+      ansible.builtin.template:
+        src: templates/apache.conf.j2
+        dest: /etc/apache2/sites-available/000-default.conf
+    - name: Enable required apache modules
+      ansible.builtin.shell: a2enmod ssl rewrite
+  handlers:
+    - name: restart apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
