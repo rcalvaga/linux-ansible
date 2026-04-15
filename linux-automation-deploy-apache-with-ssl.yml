@@ -1,33 +1,77 @@
 ---
-- name: Deploy Apache server with SSL
+- name: Install and configure Apache with SSL on Fedora
   hosts: all
-  become: true
+  become: yes
   vars:
-    apache_port: 443
-    apache_cert_file: /etc/ssl/certs/apache-cert.pem
-    apache_key_file: /etc/ssl/private/apache-key.pem
+    # Paths used by the playbook
+    ssl_cert_path: /etc/pki/tls/certs/server.crt
+    ssl_key_path:  /etc/pki/tls/private/server.key
+    ssl_conf_file: /etc/httpd/conf.d/ssl.conf
+    ssl_host: "{{ ansible_fqdn }}"
+    httpd_service: httpd
+
+  pre_tasks:
+    - name: Verify we are on Fedora (or RHEL/CentOS 8+)
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == "RedHat"
+          - ansible_distribution_major_version | int >= 8
+        fail_msg: "This playbook is only intended for Fedora (or RHEL/CentOS 8+) hosts."
+
   tasks:
-    - name: Install apache
-      ansible.builtin.package:
-        name: apache2
-        state: latest
-    - name: Install SSL
+    - name: Install Apache (httpd) and mod_ssl
       ansible.builtin.package:
         name:
-          - openssl
-          - ssl-cert
-        state: latest
-    - name: Create self-signed cert
-      ansible.builtin.command: openssl req -new -nodes -x509 -subj "/C=FI/ST=Helsinki/L=Helsinki/O=IT/CN=www.example.com" -days 3650 -keyout
-        /etc/ssl/private/apache-key.pem -out /etc/ssl/certs/apache-cert.pem -extensions v3_ca creates=/etc/ssl/certs/apache-cert.pem
-    - name: Configure apache
+          - httpd
+          - mod_ssl        # explicit, but usually already part of httpd on Fedora
+        state: present
+        update_cache: yes
+
+    - name: Ensure /etc/pki/tls/private exists (SELinux‑aware)
+      ansible.builtin.file:
+        path: /etc/pki/tls/private
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+
+    - name: Create private key for self‑signed cert
+      ansible.builtin.openssl_privatekey:
+        path: "{{ ssl_key_path }}"
+        size: 2048
+        mode: 0400
+
+    - name: Create self‑signed certificate
+      ansible.builtin.openssl_certificate:
+        path: "{{ ssl_cert_path }}"
+        privatekey_path: "{{ ssl_key_path }}"
+        common_name: "{{ ssl_host }}"
+        subject:
+          commonName: "{{ ssl_host }}"
+          organizationName: "ExampleMX"
+          countryName: "MX"
+        provider: selfsigned
+        days: 365
+        mode: 0444
+
+    - name: Create Apache SSL configuration from template
       ansible.builtin.template:
-        src: templates/apache.conf.j2
-        dest: /etc/apache2/sites-available/000-default.conf
-    - name: Enable required apache modules
-      ansible.builtin.shell: a2enmod ssl rewrite
+        src: templates/ssl.conf.j2
+        dest: "{{ ssl_conf_file }}"
+        mode: '0644'
+        owner: root
+        group: root
+      notify: restart apache
+
+    - name: Ensure Apache is enabled and started
+      ansible.builtin.service:
+        name: "{{ httpd_service }}"
+        state: started
+        enabled: yes
+      notify: restart apache
+
   handlers:
     - name: restart apache
       ansible.builtin.service:
-        name: apache2
+        name: "{{ httpd_service }}"
         state: restarted
