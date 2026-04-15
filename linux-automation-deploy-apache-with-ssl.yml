@@ -32,7 +32,7 @@
       ansible.builtin.firewalld:
         service: "{{ item }}"
         permanent: true
-        inmediate: true
+        immediate: true
         zone: public
         state: enabled
       loop:
