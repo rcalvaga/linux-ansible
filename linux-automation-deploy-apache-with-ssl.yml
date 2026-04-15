@@ -11,12 +11,12 @@
     httpd_service: httpd
 
   pre_tasks:
-    - name: Verify we are on Fedora (or RHEL/CentOS 8+)
+    - name: Verify we are on Fedora 40+ (or RHEL/CentOS 8+)
       ansible.builtin.assert:
         that:
           - ansible_os_family == "RedHat"
-          - ansible_distribution_major_version | int >= 8
-        fail_msg: "This playbook is only intended for Fedora (or RHEL/CentOS 8+) hosts."
+          - ansible_distribution_major_version | int >= 40
+        fail_msg: "This playbook is only intended for Fedora 40+ (or RHEL/CentOS 8+) hosts."
 
   tasks:
     - name: Install Apache (httpd) and mod_ssl
