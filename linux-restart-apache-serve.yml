@@ -1,0 +1,8 @@
+---
+- name: Restart Apache server
+  hosts: Web
+  tasks:
+    - name: Restart Apache2 service
+      ansible.builtin.service:
+        name: apache2  # Use "httpd" for RHEL/CentOS
+        state: restarted
