@@ -1,0 +1,44 @@
+---
+- name: System Checkup
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Check Disk Usage
+      command: df -h
+      register: disk_usage
+
+    - name: Print Disk Usage
+      debug:
+        msg: "{{ disk_usage.stdout }}"
+
+    - name: Check Memory Usage
+      command: free -h
+      register: memory_usage
+
+    - name: Print Memory Usage
+      debug:
+        msg: "{{ memory_usage.stdout }}"
+
+    - name: Check CPU Load
+      command: uptime
+      register: cpu_load
+
+    - name: Print CPU Load
+      debug:
+        msg: "{{ cpu_load.stdout }}"
+
+    - name: Check Running Processes
+      command: ps aux
+      register: running_processes
+
+    - name: Print Running Processes
+      debug:
+        msg: "{{ running_processes.stdout }}"
+
+    - name: Check Network Status
+      command: ip a
+      register: network_status
+
+    - name: Print Network Status
+      debug:
+        msg: "{{ network_status.stdout }}"
