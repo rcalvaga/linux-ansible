@@ -1,5 +1,5 @@
 - name: Check for site's certificate duration
-  hosts: localhost
+  hosts: all
   vars:
     # Override with your own site list
     sites:
